@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { User } from "../models/User/user.modal.js";
+import { Message } from "../models/Message/message.modal.js";
 
 let io;
 
@@ -54,10 +55,71 @@ socket.on("stop-typing", ({ receiverId, senderId }) => {
       socket.join(groupId);
     });
 
+    socket.on("group-typing", ({ groupId, senderId }) => {
+  socket.to(groupId).emit("group-typing", {
+    senderId,
+     isTyping: true,
+  });
+});
+
+socket.on("stop-group-typing", ({ groupId, senderId }) => {
+  socket.to(groupId).emit("group-typing", {
+    senderId,
+    isTyping: false,
+  });
+});
+
+socket.on("message-seen", async ({ messageId }) => {
+
+    const message = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            isSeen: true,
+            seenAt: new Date()
+        },
+        {
+            returnDocument: "after"
+        }
+    );
+
+    if(!message) return;
+
+    io.to(message.senderId.toString()).emit(
+        "message-seen",
+        {
+            messageId,
+            seenAt: message.seenAt
+        }
+    );
+
+});
+
     // 💬 group message
     socket.on("send-group-message", (data) => {
       io.to(data.groupId).emit("receive-group-message", data);
     });
+
+
+    socket.on("group-message-seen",async({groupId, userId })=>{
+        const message=await Message.updateMany(
+        {
+            groupId,
+            "seenBy.userId": { $ne: userId }
+        },
+        {
+            $push: {
+                seenBy: {
+                    userId,
+                    seenAt: new Date()
+                }
+            }
+        }
+    );
+    io.to(groupId).emit("group-message-seen", {
+    userId
+});
+    })
+    
 
    socket.on("disconnect", async () => {
   try {

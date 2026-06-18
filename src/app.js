@@ -15,10 +15,12 @@ app.use(cookieParser());
 import UserRouter from "./routes/User/user.route.js" 
 import ConversationRouter from "./routes/Conversation/conversation.route.js"
 import MessageRouter from "./routes/Message/Message.route.js"
+import GroupRouter from "./routes/Group/group.route.js"
 
 app.use("/api/v1/user",UserRouter),
 app.use("/api/v1/conversation",ConversationRouter)
 app.use("/api/v1/message",MessageRouter)
+app.use("/api/v1/group",GroupRouter)
 
 
 
